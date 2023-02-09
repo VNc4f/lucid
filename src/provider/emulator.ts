@@ -168,11 +168,11 @@ export class Emulator implements Provider {
   }
 
   getUtxosByHash(txHash: TxHash): Promise<UTxO[]> {
-    return Promise.resolve(
-      Object.entries(this.ledger).filter(([outRef, {}]) => {
+    return new Promise((res) => {
+      return Object.entries(this.ledger).filter(([outRef, {}]) => {
         return outRef.includes(txHash)
       }).map(([outRef, {}]) => this.ledger[outRef]!.utxo)
-    );
+    });
   }
 
   getUtxoByUnit(unit: string): Promise<UTxO> {
