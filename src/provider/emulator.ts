@@ -1,4 +1,4 @@
-import { C, Core } from "../core/core.ts";
+import {C, Core} from "../core/core.ts";
 import {
   Address,
   Assets,
@@ -19,7 +19,7 @@ import {
   UnixTime,
   UTxO,
 } from "../types/types.ts";
-import { PROTOCOL_PARAMETERS_DEFAULT } from "../utils/mod.ts";
+import {PROTOCOL_PARAMETERS_DEFAULT} from "../utils/mod.ts";
 import {
   coreToUtxo,
   fromHex,
@@ -56,7 +56,7 @@ export class Emulator implements Provider {
     this.slot = 0;
     this.time = Date.now();
     this.ledger = {};
-    accounts.forEach(({ address, assets }, index) => {
+    accounts.forEach(({address, assets}, index) => {
       this.ledger[GENESIS_HASH + index] = {
         utxo: {
           txHash: GENESIS_HASH,
@@ -81,11 +81,11 @@ export class Emulator implements Provider {
     this.blockHeight = Math.floor(this.slot / 20);
 
     if (this.blockHeight > currentHeight) {
-      for (const [outRef, { utxo, spent }] of Object.entries(this.mempool)) {
-        this.ledger[outRef] = { utxo, spent };
+      for (const [outRef, {utxo, spent}] of Object.entries(this.mempool)) {
+        this.ledger[outRef] = {utxo, spent};
       }
 
-      for (const [outRef, { spent }] of Object.entries(this.ledger)) {
+      for (const [outRef, {spent}] of Object.entries(this.ledger)) {
         if (spent) delete this.ledger[outRef];
       }
 
@@ -98,11 +98,11 @@ export class Emulator implements Provider {
     this.slot += height * 20;
     this.time += height * 20 * 1000;
 
-    for (const [outRef, { utxo, spent }] of Object.entries(this.mempool)) {
-      this.ledger[outRef] = { utxo, spent };
+    for (const [outRef, {utxo, spent}] of Object.entries(this.mempool)) {
+      this.ledger[outRef] = {utxo, spent};
     }
 
-    for (const [outRef, { spent }] of Object.entries(this.ledger)) {
+    for (const [outRef, {spent}] of Object.entries(this.ledger)) {
       if (spent) delete this.ledger[outRef];
     }
 
@@ -110,11 +110,11 @@ export class Emulator implements Provider {
   }
 
   getUtxos(addressOrCredential: Address | Credential): Promise<UTxO[]> {
-    const utxos: UTxO[] = Object.values(this.ledger).flatMap(({ utxo }) => {
+    const utxos: UTxO[] = Object.values(this.ledger).flatMap(({utxo}) => {
       if (typeof addressOrCredential === "string") {
         return addressOrCredential === utxo.address ? utxo : [];
       } else {
-        const { paymentCredential } = getAddressDetails(
+        const {paymentCredential} = getAddressDetails(
           utxo.address,
         );
         return paymentCredential?.hash === addressOrCredential.hash ? utxo : [];
@@ -138,17 +138,17 @@ export class Emulator implements Provider {
     addressOrCredential: Address | Credential,
     unit: Unit,
   ): Promise<UTxO[]> {
-    const utxos: UTxO[] = Object.values(this.ledger).flatMap(({ utxo }) => {
+    const utxos: UTxO[] = Object.values(this.ledger).flatMap(({utxo}) => {
       if (typeof addressOrCredential === "string") {
         return addressOrCredential === utxo.address && utxo.assets[unit] > 0n
           ? utxo
           : [];
       } else {
-        const { paymentCredential } = getAddressDetails(
+        const {paymentCredential} = getAddressDetails(
           utxo.address,
         );
         return paymentCredential?.hash === addressOrCredential.hash &&
-            utxo.assets[unit] > 0n
+        utxo.assets[unit] > 0n
           ? utxo
           : [];
       }
@@ -167,8 +167,16 @@ export class Emulator implements Provider {
     );
   }
 
+  getUtxosByHash(txHash: TxHash): Promise<UTxO[]> {
+    return Promise.resolve(
+      Object.entries(this.ledger).filter(([outRef, {}]) => {
+        return outRef.includes(txHash)
+      }).map(([outRef, {}]) => this.ledger[outRef]!.utxo)
+    );
+  }
+
   getUtxoByUnit(unit: string): Promise<UTxO> {
-    const utxos: UTxO[] = Object.values(this.ledger).flatMap(({ utxo }) =>
+    const utxos: UTxO[] = Object.values(this.ledger).flatMap(({utxo}) =>
       utxo.assets[unit] > 0n ? utxo : []
     );
 
@@ -200,10 +208,10 @@ export class Emulator implements Provider {
    */
   distributeRewards(rewards: Lovelace) {
     for (
-      const [rewardAddress, { registeredStake, delegation }] of Object.entries(
-        this.chain,
-      )
-    ) {
+      const [rewardAddress, {registeredStake, delegation}] of Object.entries(
+      this.chain,
+    )
+      ) {
       if (registeredStake && delegation.poolId) {
         this.chain[rewardAddress] = {
           registeredStake,
@@ -372,9 +380,9 @@ export class Emulator implements Provider {
 
       const entryLedger = this.ledger[outRef];
 
-      const { entry, type }: ResolvedInput = !entryLedger
-        ? { entry: this.mempool[outRef]!, type: "Mempool" }
-        : { entry: entryLedger, type: "Ledger" };
+      const {entry, type}: ResolvedInput = !entryLedger
+        ? {entry: this.mempool[outRef]!, type: "Mempool"}
+        : {entry: entryLedger, type: "Ledger"};
 
       if (!entry || entry.spent) {
         throw new Error(
@@ -394,7 +402,7 @@ export class Emulator implements Provider {
             const script = C.NativeScript.from_bytes(fromHex(scriptRef.script));
             nativeHashesOptional[
               script.hash(C.ScriptHashNamespace.NativeScript).to_hex()
-            ] = script;
+              ] = script;
             break;
           }
           case "PlutusV1": {
@@ -416,7 +424,7 @@ export class Emulator implements Provider {
 
       if (entry.utxo.datumHash) consumedHashes.add(entry.utxo.datumHash);
 
-      resolvedInputs.push({ entry, type });
+      resolvedInputs.push({entry, type});
     }
 
     // Check existence of reference inputs and look for script refs.
@@ -445,7 +453,7 @@ export class Emulator implements Provider {
             const script = C.NativeScript.from_bytes(fromHex(scriptRef.script));
             nativeHashesOptional[
               script.hash(C.ScriptHashNamespace.NativeScript).to_hex()
-            ] = script;
+              ] = script;
             break;
           }
           case "PlutusV1": {
@@ -564,7 +572,7 @@ export class Emulator implements Provider {
         );
       }
 
-      const { paymentCredential } = getAddressDetails(entry.utxo.address);
+      const {paymentCredential} = getAddressDetails(entry.utxo.address);
       if (paymentCredential?.type === "Script") {
         throw new Error("Collateral inputs can only contain vkeys.");
       }
@@ -575,14 +583,14 @@ export class Emulator implements Provider {
 
     for (let i = 0; i < (body.required_signers()?.len() || 0); i++) {
       const signer = body.required_signers()!.get(i);
-      checkAndConsumeHash({ type: "Key", hash: signer.to_hex() }, null, null);
+      checkAndConsumeHash({type: "Key", hash: signer.to_hex()}, null, null);
     }
 
     // Check mint witnesses
 
     for (let index = 0; index < (body.mint()?.keys().len() || 0); index++) {
       const policyId = body.mint()!.keys().get(index).to_hex();
-      checkAndConsumeHash({ type: "Script", hash: policyId }, "Mint", index);
+      checkAndConsumeHash({type: "Script", hash: policyId}, "Mint", index);
     }
 
     // Check withdrawal witnesses
@@ -602,7 +610,7 @@ export class Emulator implements Provider {
         body.withdrawals()!.get(rawAddress)!.to_str(),
       );
       const rewardAddress = rawAddress.to_address().to_bech32(undefined);
-      const { stakeCredential } = getAddressDetails(
+      const {stakeCredential} = getAddressDetails(
         rewardAddress,
       );
       checkAndConsumeHash(stakeCredential!, "Reward", index);
@@ -611,7 +619,7 @@ export class Emulator implements Provider {
           "Withdrawal amount doesn't match actual reward balance.",
         );
       }
-      withdrawalRequests.push({ rewardAddress, withdrawal });
+      withdrawalRequests.push({rewardAddress, withdrawal});
     }
 
     // Check cert witnesses
@@ -644,7 +652,7 @@ export class Emulator implements Provider {
               `Stake key is already registered. Reward address: ${rewardAddress}`,
             );
           }
-          certRequests.push({ type: "Registration", rewardAddress });
+          certRequests.push({type: "Registration", rewardAddress});
           break;
         }
         case 1: {
@@ -654,7 +662,7 @@ export class Emulator implements Provider {
             deregistration.stake_credential(),
           ).to_address().to_bech32(undefined);
 
-          const { stakeCredential } = getAddressDetails(rewardAddress);
+          const {stakeCredential} = getAddressDetails(rewardAddress);
           checkAndConsumeHash(stakeCredential!, "Cert", index);
 
           if (!this.chain[rewardAddress]?.registeredStake) {
@@ -662,7 +670,7 @@ export class Emulator implements Provider {
               `Stake key is already deregistered. Reward address: ${rewardAddress}`,
             );
           }
-          certRequests.push({ type: "Deregistration", rewardAddress });
+          certRequests.push({type: "Deregistration", rewardAddress});
           break;
         }
         case 2: {
@@ -673,7 +681,7 @@ export class Emulator implements Provider {
           ).to_address().to_bech32(undefined);
           const poolId = delegation.pool_keyhash().to_bech32("pool");
 
-          const { stakeCredential } = getAddressDetails(rewardAddress);
+          const {stakeCredential} = getAddressDetails(rewardAddress);
           checkAndConsumeHash(stakeCredential!, "Cert", index);
 
           if (
@@ -687,7 +695,7 @@ export class Emulator implements Provider {
               `Stake key is not registered. Reward address: ${rewardAddress}`,
             );
           }
-          certRequests.push({ type: "Delegation", rewardAddress, poolId });
+          certRequests.push({type: "Delegation", rewardAddress, poolId});
           break;
         }
       }
@@ -695,8 +703,8 @@ export class Emulator implements Provider {
 
     // Check input witnesses
 
-    resolvedInputs.forEach(({ entry: { utxo } }, index) => {
-      const { paymentCredential } = getAddressDetails(utxo.address);
+    resolvedInputs.forEach(({entry: {utxo}}, index) => {
+      const {paymentCredential} = getAddressDetails(utxo.address);
       checkAndConsumeHash(paymentCredential!, "Spend", index);
     });
 
@@ -763,7 +771,7 @@ export class Emulator implements Provider {
 
     // Apply transitions
 
-    resolvedInputs.forEach(({ entry, type }) => {
+    resolvedInputs.forEach(({entry, type}) => {
       const outRef = entry.utxo.txHash + entry.utxo.outputIndex;
       entry.spent = true;
 
@@ -771,11 +779,11 @@ export class Emulator implements Provider {
       else if (type === "Mempool") this.mempool[outRef] = entry;
     });
 
-    withdrawalRequests.forEach(({ rewardAddress, withdrawal }) => {
+    withdrawalRequests.forEach(({rewardAddress, withdrawal}) => {
       this.chain[rewardAddress].delegation.rewards -= withdrawal;
     });
 
-    certRequests.forEach(({ type, rewardAddress, poolId }) => {
+    certRequests.forEach(({type, rewardAddress, poolId}) => {
       switch (type) {
         case "Registration": {
           if (this.chain[rewardAddress]) {
@@ -783,7 +791,7 @@ export class Emulator implements Provider {
           } else {
             this.chain[rewardAddress] = {
               registeredStake: true,
-              delegation: { poolId: null, rewards: 0n },
+              delegation: {poolId: null, rewards: 0n},
             };
           }
           break;
@@ -799,7 +807,7 @@ export class Emulator implements Provider {
       }
     });
 
-    outputs.forEach(({ utxo, spent }) => {
+    outputs.forEach(({utxo, spent}) => {
       this.mempool[utxo.txHash + utxo.outputIndex] = {
         utxo,
         spent,
@@ -834,10 +842,10 @@ export class Emulator implements Provider {
     const totalBalances: Assets = {};
 
     const balances: Record<Address, Assets> = {};
-    for (const { utxo } of Object.values(this.ledger)) {
+    for (const {utxo} of Object.values(this.ledger)) {
       for (const [unit, quantity] of Object.entries(utxo.assets)) {
         if (!balances[utxo.address]) {
-          balances[utxo.address] = { [unit]: quantity };
+          balances[utxo.address] = {[unit]: quantity};
         } else if (!balances[utxo.address]?.[unit]) {
           balances[utxo.address][unit] = quantity;
         } else {

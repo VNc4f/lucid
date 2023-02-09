@@ -189,6 +189,10 @@ export class Lucid {
     return this.provider.getUtxosByOutRef(outRefs);
   }
 
+  utxosByHash(txHash: TxHash): Promise<UTxO[]> {
+    return this.provider.getUtxosByHash(txHash);
+  }
+
   delegationAt(rewardAddress: RewardAddress): Promise<Delegation> {
     return this.provider.getDelegation(rewardAddress);
   }
