@@ -36,6 +36,7 @@ export interface Provider {
   getUtxoByUnit(unit: Unit): Promise<UTxO>;
   /** Query UTxOs by the output reference (tx hash and index). */
   getUtxosByOutRef(outRefs: Array<OutRef>): Promise<UTxO[]>;
+  getUtxosByHash(txHash: TxHash): Promise<UTxO[]>;
   getDelegation(rewardAddress: RewardAddress): Promise<Delegation>;
   getDatum(datumHash: DatumHash): Promise<Datum>;
   awaitTx(txHash: TxHash, checkInterval?: number): Promise<boolean>;
@@ -133,6 +134,31 @@ export type UTxO = {
   datumHash?: DatumHash | null;
   datum?: Datum | null;
   scriptRef?: Script | null;
+};
+
+export type Txs = {
+  txHash: TxHash;
+  block: string;
+  blockHeight: number;
+  blockTime: number;
+  slot: Slot;
+  index: number;
+  outputAmount: Assets;
+  fees: bigint;
+  deposit: bigint;
+  size: number;
+  invalidBefore?: string | null;
+  invalidHereafter?: string | null;
+  utxoCount: number;
+  withdrawalCount: number;
+  mirCertCount: number;
+  delegationCount: number;
+  stakeCertCount: number;
+  poolUpdateCount: number;
+  poolRetireCount: number;
+  assetMintOrBurnCount: number;
+  redeemerCount: number;
+  validContract: boolean;
 };
 
 export type OutRef = { txHash: TxHash; outputIndex: number };

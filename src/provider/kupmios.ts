@@ -10,7 +10,7 @@ import {
   Provider,
   RewardAddress,
   Transaction,
-  TxHash,
+  TxHash, Txs,
   Unit,
   UTxO,
 } from "../types/mod.ts";
@@ -133,18 +133,24 @@ export class Kupmios implements Provider {
   async getUtxosByOutRef(outRefs: Array<OutRef>): Promise<UTxO[]> {
     const queryHashes = [...new Set(outRefs.map((outRef) => outRef.txHash))];
 
-    const utxos = await Promise.all(queryHashes.map(async (txHash) => {
-      const result = await fetch(
-        `${this.kupoUrl}/matches/*@${txHash}?unspent`,
-      ).then((res) => res.json());
-      return this.kupmiosUtxosToUtxos(result);
-    }));
+    const utxos = await Promise.all(queryHashes.map(this.getUtxosByHash));
 
     return utxos.reduce((acc, utxos) => acc.concat(utxos), []).filter((utxo) =>
       outRefs.some((outRef) =>
         utxo.txHash === outRef.txHash && utxo.outputIndex === outRef.outputIndex
       )
     );
+  }
+
+  async getUtxosByHash(txHash: TxHash): Promise<UTxO[]> {
+    const result = await fetch(
+      `${this.kupoUrl}/matches/*@${txHash}?unspent`,
+    ).then((res) => res.json());
+    if (!result || result.hint) {
+      return [];
+    }
+
+    return this.kupmiosUtxosToUtxos(result);
   }
 
   async getDelegation(rewardAddress: RewardAddress): Promise<Delegation> {

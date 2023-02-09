@@ -10,9 +10,9 @@ import {
   OutRef,
   ProtocolParameters,
   Provider,
-  RewardAddress,
+  RewardAddress, Slot,
   Transaction,
-  TxHash,
+  TxHash, Txs,
   Unit,
   UTxO,
 } from "../types/mod.ts";
@@ -149,29 +149,74 @@ export class Blockfrost implements Provider {
 
   async getUtxosByOutRef(outRefs: OutRef[]): Promise<UTxO[]> {
     const queryHashes = [...new Set(outRefs.map((outRef) => outRef.txHash))];
-    const utxos = await Promise.all(queryHashes.map(async (txHash) => {
-      const result = await fetch(
-        `${this.url}/txs/${txHash}/utxos`,
-        { headers: { project_id: this.projectId, lucid } },
-      ).then((res) => res.json());
-      if (!result || result.error) {
-        return [];
-      }
-      const utxosResult: BlockfrostUtxoResult = result.outputs.map((
-        // deno-lint-ignore no-explicit-any
-        r: any,
-      ) => ({
-        ...r,
-        tx_hash: txHash,
-      }));
-      return this.blockfrostUtxosToUtxos(utxosResult);
-    }));
+    const utxos = await Promise.all(queryHashes.map(this.getUtxosByHash));
 
     return utxos.reduce((acc, utxos) => acc.concat(utxos), []).filter((utxo) =>
       outRefs.some((outRef) =>
         utxo.txHash === outRef.txHash && utxo.outputIndex === outRef.outputIndex
       )
     );
+  }
+
+  async getUtxosByHash(txHash: TxHash): Promise<UTxO[]> {
+    const result = await fetch(
+      `${this.url}/txs/${txHash}/utxos`,
+      { headers: { project_id: this.projectId, lucid } },
+    ).then((res) => res.json());
+    if (!result || result.error) {
+      return [];
+    }
+    const utxosResult: BlockfrostUtxoResult = result.outputs.map((
+      // deno-lint-ignore no-explicit-any
+      r: any,
+    ) => ({
+      ...r,
+      tx_hash: txHash,
+    }));
+
+    return this.blockfrostUtxosToUtxos(utxosResult);
+  }
+
+  async getTxsByHash(txHash: TxHash): Promise<Txs> {
+    const result = await fetch(
+      `${this.url}/txs/${txHash}`,
+      { headers: { project_id: this.projectId, lucid } },
+    ).then((res) => res.json());
+    if (!result || result.error) {
+      throw new Error(result.error + ": " + result.message);
+    }
+    const r: BlockfrostTxsResult = result;
+
+    return {
+      txHash: r.tx_hash,
+      block: r.block,
+      blockHeight: r.block_height,
+      blockTime: r.block_time,
+      slot: r.slot,
+      index: r.index,
+      outputAmount: (() => {
+        const a: Assets = {};
+        r.output_amount.forEach((am) => {
+          a[am.unit] = BigInt(am.quantity);
+        });
+        return a;
+      })(),
+      fees: BigInt(r.fees),
+      deposit: BigInt(r.deposit),
+      size: r.size,
+      invalidBefore: !r.invalid_before ? r.invalid_before : undefined,
+      invalidHereafter: !r.invalid_hereafter ? r.invalid_hereafter : undefined,
+      utxoCount: r.utxo_count,
+      withdrawalCount: r.withdrawal_count,
+      mirCertCount: r.mir_cert_count,
+      delegationCount: r.delegation_count,
+      stakeCertCount: r.stake_cert_count,
+      poolUpdateCount: r.pool_update_count,
+      poolRetireCount: r.pool_retire_count,
+      assetMintOrBurnCount: r.asset_mint_or_burn_count,
+      redeemerCount: r.redeemer_count,
+      validContract: r.valid_contract,
+    };
   }
 
   async getDelegation(rewardAddress: RewardAddress): Promise<Delegation> {
@@ -342,6 +387,37 @@ type BlockfrostUtxoResult = Array<{
 type BlockfrostUtxoError = {
   status_code: number;
   error: unknown;
+};
+
+type BlockfrostTxsResult = {
+  tx_hash: string;
+  block: string;
+  block_height: number;
+  block_time: number;
+  slot: number;
+  index: number;
+  output_amount: Array<{ unit: string; quantity: string }>;
+  fees: string;
+  deposit: string;
+  size: number;
+  invalid_before?: string;
+  invalid_hereafter?: string;
+  utxo_count: number;
+  withdrawal_count: number;
+  mir_cert_count: number;
+  delegation_count: number;
+  stake_cert_count: number;
+  pool_update_count: number;
+  pool_retire_count: number;
+  asset_mint_or_burn_count: number;
+  redeemer_count: number;
+  valid_contract: boolean;
+};
+
+type BlockfrostTxsError = {
+  status_code: number;
+  error: unknown;
+  message: string;
 };
 
 const lucid = packageJson.version; // Lucid version
