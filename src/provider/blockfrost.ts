@@ -1,5 +1,5 @@
-import { C, Core } from "../core/mod.ts";
-import { applyDoubleCborEncoding, fromHex, toHex } from "../utils/mod.ts";
+import {C, Core} from "../core/mod.ts";
+import {applyDoubleCborEncoding, fromHex, toHex} from "../utils/mod.ts";
 import {
   Address,
   Assets,
@@ -10,13 +10,14 @@ import {
   OutRef,
   ProtocolParameters,
   Provider,
-  RewardAddress, Slot,
+  RewardAddress,
   Transaction,
-  TxHash, Txs,
+  TxHash,
+  Txs,
   Unit,
   UTxO,
 } from "../types/mod.ts";
-import packageJson from "../../package.json" assert { type: "json" };
+import packageJson from "../../package.json" assert {type: "json"};
 
 export class Blockfrost implements Provider {
   url: string;
@@ -29,7 +30,7 @@ export class Blockfrost implements Provider {
 
   async getProtocolParameters(): Promise<ProtocolParameters> {
     const result = await fetch(`${this.url}/epochs/latest/parameters`, {
-      headers: { project_id: this.projectId, lucid },
+      headers: {project_id: this.projectId, lucid},
     }).then((res) => res.json());
 
     return {
@@ -68,7 +69,7 @@ export class Blockfrost implements Provider {
       const pageResult: BlockfrostUtxoResult | BlockfrostUtxoError =
         await fetch(
           `${this.url}/addresses/${queryPredicate}/utxos?page=${page}`,
-          { headers: { project_id: this.projectId, lucid } },
+          {headers: {project_id: this.projectId, lucid}},
         ).then((res) => res.json());
       if ((pageResult as BlockfrostUtxoError).error) {
         if ((pageResult as BlockfrostUtxoError).status_code === 404) {
@@ -106,7 +107,7 @@ export class Blockfrost implements Provider {
       const pageResult: BlockfrostUtxoResult | BlockfrostUtxoError =
         await fetch(
           `${this.url}/addresses/${queryPredicate}/utxos/${unit}?page=${page}`,
-          { headers: { project_id: this.projectId, lucid } },
+          {headers: {project_id: this.projectId, lucid}},
         ).then((res) => res.json());
       if ((pageResult as BlockfrostUtxoError).error) {
         if ((pageResult as BlockfrostUtxoError).status_code === 404) {
@@ -126,7 +127,7 @@ export class Blockfrost implements Provider {
   async getUtxoByUnit(unit: Unit): Promise<UTxO> {
     const addresses = await fetch(
       `${this.url}/assets/${unit}/addresses?count=2`,
-      { headers: { project_id: this.projectId, lucid } },
+      {headers: {project_id: this.projectId, lucid}},
     ).then((res) => res.json());
 
     if (!addresses || addresses.error) {
@@ -161,7 +162,7 @@ export class Blockfrost implements Provider {
   async getUtxosByHash(txHash: TxHash): Promise<UTxO[]> {
     const result = await fetch(
       `${this.url}/txs/${txHash}/utxos`,
-      { headers: { project_id: this.projectId, lucid } },
+      {headers: {project_id: this.projectId, lucid}},
     ).then((res) => res.json());
     if (!result || result.error) {
       return [];
@@ -180,7 +181,7 @@ export class Blockfrost implements Provider {
   async getTxsByHash(txHash: TxHash): Promise<Txs> {
     const result = await fetch(
       `${this.url}/txs/${txHash}`,
-      { headers: { project_id: this.projectId, lucid } },
+      {headers: {project_id: this.projectId, lucid}},
     ).then((res) => res.json());
     if (!result || result.error) {
       throw new Error(result.error + ": " + result.message);
@@ -222,10 +223,10 @@ export class Blockfrost implements Provider {
   async getDelegation(rewardAddress: RewardAddress): Promise<Delegation> {
     const result = await fetch(
       `${this.url}/accounts/${rewardAddress}`,
-      { headers: { project_id: this.projectId, lucid } },
+      {headers: {project_id: this.projectId, lucid}},
     ).then((res) => res.json());
     if (!result || result.error) {
-      return { poolId: null, rewards: 0n };
+      return {poolId: null, rewards: 0n};
     }
     return {
       poolId: result.pool_id || null,
@@ -237,7 +238,7 @@ export class Blockfrost implements Provider {
     const datum = await fetch(
       `${this.url}/scripts/datum/${datumHash}/cbor`,
       {
-        headers: { project_id: this.projectId, lucid },
+        headers: {project_id: this.projectId, lucid},
       },
     )
       .then((res) => res.json())
@@ -248,11 +249,24 @@ export class Blockfrost implements Provider {
     return datum;
   }
 
+  async getDatumJson(datumHash: DatumHash): Promise<unknown> {
+    const datum = await fetch(
+      `${this.url}/scripts/datum/${datumHash}`,
+      {
+        headers: {project_id: this.projectId, lucid},
+      },
+    ).then((res) => res.json())
+    if (!datum || datum.error) {
+      throw new Error(`No datum found for datum hash: ${datumHash}`);
+    }
+    return datum;
+  }
+
   awaitTx(txHash: TxHash, checkInterval = 3000): Promise<boolean> {
     return new Promise((res) => {
       const confirmation = setInterval(async () => {
         const isConfirmed = await fetch(`${this.url}/txs/${txHash}`, {
-          headers: { project_id: this.projectId, lucid },
+          headers: {project_id: this.projectId, lucid},
         }).then((res) => res.json());
         if (isConfirmed && !isConfirmed.error) {
           clearInterval(confirmation);
@@ -304,16 +318,16 @@ export class Blockfrost implements Provider {
             } = await fetch(
               `${this.url}/scripts/${r.reference_script_hash}`,
               {
-                headers: { project_id: this.projectId, lucid },
+                headers: {project_id: this.projectId, lucid},
               },
             ).then((res) => res.json());
             // TODO: support native scripts
             if (type === "Native" || type === "native") {
               throw new Error("Native script ref not implemented!");
             }
-            const { cbor: script } = await fetch(
+            const {cbor: script} = await fetch(
               `${this.url}/scripts/${r.reference_script_hash}/cbor`,
-              { headers: { project_id: this.projectId, lucid } },
+              {headers: {project_id: this.projectId, lucid}},
             ).then((res) => res.json());
             return {
               type: type === "plutusV1" ? "PlutusV1" : "PlutusV2",
@@ -337,7 +351,7 @@ export function datumJsonToCbor(json: DatumJson): Datum {
       return C.PlutusData.new_bytes(fromHex(json.bytes!));
     } else if (json.map) {
       const m = C.PlutusMap.new();
-      json.map.forEach(({ k, v }: { k: unknown; v: unknown }) => {
+      json.map.forEach(({k, v}: { k: unknown; v: unknown }) => {
         m.insert(convert(k as DatumJson), convert(v as DatumJson));
       });
       return C.PlutusData.new_map(m);

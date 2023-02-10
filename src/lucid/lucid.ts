@@ -1,16 +1,9 @@
-import { C, Core } from "../core/mod.ts";
-import {
-  coreToUtxo,
-  createCostModels,
-  fromHex,
-  paymentCredentialOf,
-  toHex,
-  Utils,
-  utxoToCore,
-} from "../utils/mod.ts";
+import {C, Core} from "../core/mod.ts";
+import {coreToUtxo, createCostModels, fromHex, paymentCredentialOf, toHex, Utils, utxoToCore,} from "../utils/mod.ts";
 import {
   Address,
   Datum,
+  DatumHash,
   Delegation,
   ExternalWallet,
   KeyHash,
@@ -29,16 +22,16 @@ import {
   Wallet,
   WalletApi,
 } from "../types/mod.ts";
-import { Tx } from "./tx.ts";
-import { TxComplete } from "./tx_complete.ts";
-import { discoverOwnUsedTxKeyHashes, walletFromSeed } from "../misc/wallet.ts";
-import { signData, verifyData } from "../misc/sign_data.ts";
-import { Message } from "./message.ts";
-import { SLOT_CONFIG_NETWORK } from "../plutus/time.ts";
-import { Data } from "../plutus/data.ts";
-import { TSchema } from "https://deno.land/x/typebox@0.25.13/src/typebox.ts";
-import { Emulator } from "../provider/emulator.ts";
-import { Credential } from "../types/types.ts";
+import {Tx} from "./tx.ts";
+import {TxComplete} from "./tx_complete.ts";
+import {discoverOwnUsedTxKeyHashes, walletFromSeed} from "../misc/wallet.ts";
+import {signData, verifyData} from "../misc/sign_data.ts";
+import {Message} from "./message.ts";
+import {SLOT_CONFIG_NETWORK} from "../plutus/time.ts";
+import {Data} from "../plutus/data.ts";
+import {TSchema} from "https://deno.land/x/typebox@0.25.13/src/typebox.ts";
+import {Emulator} from "../provider/emulator.ts";
+import {Credential} from "../types/types.ts";
 
 export class Lucid {
   txBuilderConfig!: Core.TransactionBuilderConfig;
@@ -155,7 +148,7 @@ export class Lucid {
     payload: Payload,
     signedMessage: SignedMessage,
   ): boolean {
-    const { paymentCredential, stakeCredential, address: { hex: addressHex } } =
+    const {paymentCredential, stakeCredential, address: {hex: addressHex}} =
       this.utils.getAddressDetails(
         address,
       );
@@ -211,6 +204,13 @@ export class Lucid {
     return shape ? Data.from<T>(utxo.datum, shape) : utxo.datum as T;
   }
 
+  async getDatumJson(datumHash: DatumHash): Promise<unknown> {
+    if (!datumHash) {
+      throw new Error("This func call does not have a datum hash.");
+    }
+    return await this.provider.getDatumJson(datumHash);
+  }
+
   /**
    * Cardano Private key in bech32; not the BIP32 private key or any key that is not fully derived.
    * Only an Enteprise address (without stake credential) is derived.
@@ -247,7 +247,7 @@ export class Lucid {
       },
       // deno-lint-ignore require-await
       getDelegation: async (): Promise<Delegation> => {
-        return { poolId: null, rewards: 0n };
+        return {poolId: null, rewards: 0n};
       },
       // deno-lint-ignore require-await
       signTx: async (
@@ -266,7 +266,7 @@ export class Lucid {
         address: Address | RewardAddress,
         payload: Payload,
       ): Promise<SignedMessage> => {
-        const { paymentCredential, address: { hex: hexAddress } } = this.utils
+        const {paymentCredential, address: {hex: hexAddress}} = this.utils
           .getAddressDetails(address);
         const keyHash = paymentCredential?.hash;
 
@@ -331,7 +331,7 @@ export class Lucid {
 
         return rewardAddr
           ? await this.delegationAt(rewardAddr)
-          : { poolId: null, rewards: 0n };
+          : {poolId: null, rewards: 0n};
       },
       signTx: async (
         tx: Core.Transaction,
@@ -359,10 +359,10 @@ export class Lucid {
    * If utxos are not set, utxos are fetched from the provided address.
    */
   selectWalletFrom({
-    address,
-    utxos,
-    rewardAddress,
-  }: ExternalWallet): Lucid {
+                     address,
+                     utxos,
+                     rewardAddress,
+                   }: ExternalWallet): Lucid {
     const addressDetails = this.utils.getAddressDetails(address);
     this.wallet = {
       // deno-lint-ignore require-await
@@ -409,7 +409,7 @@ export class Lucid {
 
         return rewardAddr
           ? await this.delegationAt(rewardAddr)
-          : { poolId: null, rewards: 0n };
+          : {poolId: null, rewards: 0n};
       },
       // deno-lint-ignore require-await
       signTx: async (): Promise<Core.TransactionWitnessSet> => {
@@ -438,7 +438,7 @@ export class Lucid {
       password?: string;
     },
   ): Lucid {
-    const { address, rewardAddress, paymentKey, stakeKey } = walletFromSeed(
+    const {address, rewardAddress, paymentKey, stakeKey} = walletFromSeed(
       seed,
       {
         addressType: options?.addressType || "Base",
@@ -480,7 +480,7 @@ export class Lucid {
 
         return rewardAddr
           ? await this.delegationAt(rewardAddr)
-          : { poolId: null, rewards: 0n };
+          : {poolId: null, rewards: 0n};
       },
       signTx: async (
         tx: Core.Transaction,
@@ -513,7 +513,7 @@ export class Lucid {
         const {
           paymentCredential,
           stakeCredential,
-          address: { hex: hexAddress },
+          address: {hex: hexAddress},
         } = this.utils
           .getAddressDetails(address);
 

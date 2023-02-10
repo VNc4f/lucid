@@ -20,12 +20,7 @@ import {
   UTxO,
 } from "../types/types.ts";
 import {PROTOCOL_PARAMETERS_DEFAULT} from "../utils/mod.ts";
-import {
-  coreToUtxo,
-  fromHex,
-  getAddressDetails,
-  toHex,
-} from "../utils/utils.ts";
+import {coreToUtxo, fromHex, getAddressDetails, toHex,} from "../utils/utils.ts";
 
 /** Concatentation of txHash + outputIndex */
 type FlatOutRef = string;
@@ -131,6 +126,10 @@ export class Emulator implements Provider {
   }
 
   getDatum(datumHash: DatumHash): Promise<Datum> {
+    return Promise.resolve(this.datumTable[datumHash]);
+  }
+
+  getDatumJson(datumHash: DatumHash): Promise<unknown> {
     return Promise.resolve(this.datumTable[datumHash]);
   }
 

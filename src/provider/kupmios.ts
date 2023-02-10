@@ -10,12 +10,12 @@ import {
   Provider,
   RewardAddress,
   Transaction,
-  TxHash, Txs,
+  TxHash,
   Unit,
   UTxO,
 } from "../types/mod.ts";
-import { C } from "../core/mod.ts";
-import { fromHex, fromUnit, getAddressDetails, toHex } from "../utils/mod.ts";
+import {C} from "../core/mod.ts";
+import {fromHex, fromUnit, getAddressDetails, toHex} from "../utils/mod.ts";
 
 export class Kupmios implements Provider {
   kupoUrl: string;
@@ -38,7 +38,7 @@ export class Kupmios implements Provider {
     return new Promise((res, rej) => {
       client.addEventListener("message", (msg: MessageEvent<string>) => {
         try {
-          const { result } = JSON.parse(msg.data);
+          const {result} = JSON.parse(msg.data);
 
           // deno-lint-ignore no-explicit-any
           const costModels: any = {};
@@ -74,7 +74,7 @@ export class Kupmios implements Provider {
         } catch (e) {
           rej(e);
         }
-      }, { once: true });
+      }, {once: true});
     });
   }
 
@@ -100,7 +100,7 @@ export class Kupmios implements Provider {
     const queryPredicate = isAddress
       ? addressOrCredential
       : addressOrCredential.hash;
-    const { policyId, assetName } = fromUnit(unit);
+    const {policyId, assetName} = fromUnit(unit);
     const result = await fetch(
       `${this.kupoUrl}/matches/${queryPredicate}${
         isAddress ? "" : "/*"
@@ -113,7 +113,7 @@ export class Kupmios implements Provider {
   }
 
   async getUtxoByUnit(unit: Unit): Promise<UTxO> {
-    const { policyId, assetName } = fromUnit(unit);
+    const {policyId, assetName} = fromUnit(unit);
     const result = await fetch(
       `${this.kupoUrl}/matches/${policyId}.${
         assetName ? `${assetName}` : "*"
@@ -154,15 +154,15 @@ export class Kupmios implements Provider {
   }
 
   async getDelegation(rewardAddress: RewardAddress): Promise<Delegation> {
-    const { stakeCredential } = getAddressDetails(rewardAddress);
+    const {stakeCredential} = getAddressDetails(rewardAddress);
     const client = await this.ogmiosWsp("Query", {
-      query: { "delegationsAndRewards": [stakeCredential!.hash] },
+      query: {"delegationsAndRewards": [stakeCredential!.hash]},
     });
 
     return new Promise((res, rej) => {
       client.addEventListener("message", (msg: MessageEvent<string>) => {
         try {
-          const { result } = JSON.parse(msg.data);
+          const {result} = JSON.parse(msg.data);
           const delegation = (result ? Object.values(result)[0] : {}) as {
             delegate: string;
             rewards: number;
@@ -177,7 +177,7 @@ export class Kupmios implements Provider {
         } catch (e) {
           rej(e);
         }
-      }, { once: true });
+      }, {once: true});
     });
   }
 
@@ -189,6 +189,16 @@ export class Kupmios implements Provider {
       throw new Error(`No datum found for datum hash: ${datumHash}`);
     }
     return result.datum;
+  }
+
+  async getDatumJson(datumHash: DatumHash): Promise<unknown> {
+    const result = await fetch(
+      `${this.kupoUrl}/datums/${datumHash}`,
+    ).then((res) => res.json());
+    if (!result || !result.datum) {
+      throw new Error(`No datum found for datum hash: ${datumHash}`);
+    }
+    return result;
   }
 
   awaitTx(txHash: TxHash, checkInterval = 3000): Promise<boolean> {
@@ -214,7 +224,7 @@ export class Kupmios implements Provider {
     return new Promise((res, rej) => {
       client.addEventListener("message", (msg: MessageEvent<string>) => {
         try {
-          const { result } = JSON.parse(msg.data);
+          const {result} = JSON.parse(msg.data);
 
           if (result.SubmitSuccess) res(result.SubmitSuccess.txId);
           else rej(result.SubmitFail);
@@ -222,7 +232,7 @@ export class Kupmios implements Provider {
         } catch (e) {
           rej(e);
         }
-      }, { once: true });
+      }, {once: true});
     });
   }
 
@@ -234,7 +244,7 @@ export class Kupmios implements Provider {
         outputIndex: parseInt(utxo.output_index),
         address: utxo.address,
         assets: (() => {
-          const a: Assets = { lovelace: BigInt(utxo.value.coins) };
+          const a: Assets = {lovelace: BigInt(utxo.value.coins)};
           Object.keys(utxo.value.assets).forEach((unit) => {
             a[unit.replace(".", "")] = BigInt(utxo.value.assets[unit]);
           });
@@ -254,7 +264,7 @@ export class Kupmios implements Provider {
             ).then((res) => res.json());
 
             if (language === "native") {
-              return { type: "Native", script };
+              return {type: "Native", script};
             } else if (language === "plutus:v1") {
               return {
                 type: "PlutusV1",
@@ -277,7 +287,7 @@ export class Kupmios implements Provider {
   ): Promise<WebSocket> {
     const client = new WebSocket(this.ogmiosUrl);
     await new Promise((res) => {
-      client.addEventListener("open", () => res(1), { once: true });
+      client.addEventListener("open", () => res(1), {once: true});
     });
     client.send(JSON.stringify({
       type: "jsonwsp/request",
