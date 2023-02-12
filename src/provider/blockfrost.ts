@@ -51,24 +51,22 @@ export class Blockfrost implements Provider {
     };
   }
 
-  async getUtxos(addressOrCredential: Address | Credential): Promise<UTxO[]> {
-    const queryPredicate = (() => {
-      if (typeof addressOrCredential === "string") return addressOrCredential;
-      const credentialBech32 = addressOrCredential.type === "Key"
-        ? C.Ed25519KeyHash.from_hex(addressOrCredential.hash).to_bech32(
-          "addr_vkh",
-        )
-        : C.ScriptHash.from_hex(addressOrCredential.hash).to_bech32(
-          "addr_vkh",
-        ); // should be 'script' (CIP-0005)
-      return credentialBech32;
-    })();
-    let result: BlockfrostUtxoResult = [];
+  getQueryPredicate(addressOrCredential: Address | Credential): string {
+    if (typeof addressOrCredential === "string") return addressOrCredential;
+
+    return addressOrCredential.type === "Key"
+      ? C.Ed25519KeyHash.from_hex(addressOrCredential.hash).to_bech32("addr_vkh")
+      : C.ScriptHash.from_hex(addressOrCredential.hash).to_bech32("addr_vkh"); // should be 'script' (CIP-0005)
+  }
+
+  async fetchPageBlockfrost<T>(url: string, order: "asc" | "desc", toPage: number): T {
+    if (typeof order == 'undefined') order = "asc";
+    let result: T = [];
     let page = 1;
     while (true) {
-      const pageResult: BlockfrostUtxoResult | BlockfrostUtxoError =
+      const pageResult: T | BlockfrostUtxoError =
         await fetch(
-          `${this.url}/addresses/${queryPredicate}/utxos?page=${page}`,
+          `${url}&order${order}&page=${page}`,
           {headers: {project_id: this.projectId, lucid}},
         ).then((res) => res.json());
       if ((pageResult as BlockfrostUtxoError).error) {
@@ -78,50 +76,52 @@ export class Blockfrost implements Provider {
           throw new Error("Could not fetch UTxOs from Blockfrost. Try again.");
         }
       }
-      result = result.concat(pageResult as BlockfrostUtxoResult);
-      if ((pageResult as BlockfrostUtxoResult).length <= 0) break;
+      result = result.concat(pageResult as T);
+      if ((pageResult as T).length <= 0 || page == toPage) break;
       page++;
     }
 
-    return this.blockfrostUtxosToUtxos(result);
+    return result
+  }
+
+  async getUtxos(addressOrCredential: Address | Credential): Promise<UTxO[]> {
+    return this.blockfrostUtxosToUtxos(this.fetchPageBlockfrost<BlockfrostUtxoResult>(
+      `${this.url}/addresses/${this.getQueryPredicate()}/utxos?`
+    ));
   }
 
   async getUtxosWithUnit(
     addressOrCredential: Address | Credential,
     unit: Unit,
   ): Promise<UTxO[]> {
-    const queryPredicate = (() => {
-      if (typeof addressOrCredential === "string") return addressOrCredential;
-      const credentialBech32 = addressOrCredential.type === "Key"
-        ? C.Ed25519KeyHash.from_hex(addressOrCredential.hash).to_bech32(
-          "addr_vkh",
-        )
-        : C.ScriptHash.from_hex(addressOrCredential.hash).to_bech32(
-          "addr_vkh",
-        ); // should be 'script' (CIP-0005)
-      return credentialBech32;
-    })();
-    let result: BlockfrostUtxoResult = [];
-    let page = 1;
-    while (true) {
-      const pageResult: BlockfrostUtxoResult | BlockfrostUtxoError =
-        await fetch(
-          `${this.url}/addresses/${queryPredicate}/utxos/${unit}?page=${page}`,
-          {headers: {project_id: this.projectId, lucid}},
-        ).then((res) => res.json());
-      if ((pageResult as BlockfrostUtxoError).error) {
-        if ((pageResult as BlockfrostUtxoError).status_code === 404) {
-          return [];
-        } else {
-          throw new Error("Could not fetch UTxOs from Blockfrost. Try again.");
-        }
-      }
-      result = result.concat(pageResult as BlockfrostUtxoResult);
-      if ((pageResult as BlockfrostUtxoResult).length <= 0) break;
-      page++;
-    }
+    return this.blockfrostUtxosToUtxos(this.fetchPageBlockfrost<BlockfrostUtxoResult>(
+      `${this.url}/addresses/${this.getQueryPredicate()}/utxos/${unit}?`
+    ));
+  }
 
-    return this.blockfrostUtxosToUtxos(result);
+  async getTxsByUnit(unit: Unit, order: "asc" | "desc", toPage: number): Promise<BlockfrostAssetTxsResult> {
+    return this.fetchPageBlockfrost<BlockfrostAssetTxsResult>(
+      `${this.url}/assets/${unit}/transactions?`, order, toPage
+    );
+  }
+
+  async getUtxosMintByUnit(unit: Unit): Promise<UTxO[]> {
+    const results: BlockfrostAssetTxsResult = await this.getTxsByUnit(unit, "asc", 1);
+    if (results.length <= 0) return [];
+
+    const utxos = await this.getUtxosByHash(results[0].tx_hash);
+    return utxos.reduce((acc, utxos) => acc.concat(utxos), []);
+  }
+
+  async getUtxosByUnit(unit: Unit): Promise<UTxO[]> {
+    const results: BlockfrostAssetTxsResult = await this.getTxsByUnit(unit);
+    const txHashes = [...new Set(results.map((assetTx) => assetTx.tx_hash))];
+    const that = this;
+    const utxos = await Promise.all(txHashes.map(function (v, i, a) {
+      return that.getUtxosByHash(v)
+    }));
+
+    return utxos.reduce((acc, utxos) => acc.concat(utxos), []);
   }
 
   async getUtxoByUnit(unit: Unit): Promise<UTxO> {
@@ -398,6 +398,13 @@ type BlockfrostUtxoResult = Array<{
   reference_script_hash?: string;
 }>;
 
+type BlockfrostAssetTxsResult = Array<{
+  tx_hash: string;
+  tx_index: number;
+  block_height: number;
+  block_time: number;
+}>;
+
 type BlockfrostUtxoError = {
   status_code: number;
   error: unknown;
@@ -426,12 +433,6 @@ type BlockfrostTxsResult = {
   asset_mint_or_burn_count: number;
   redeemer_count: number;
   valid_contract: boolean;
-};
-
-type BlockfrostTxsError = {
-  status_code: number;
-  error: unknown;
-  message: string;
 };
 
 const lucid = packageJson.version; // Lucid version

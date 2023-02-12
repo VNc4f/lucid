@@ -174,6 +174,18 @@ export class Emulator implements Provider {
     });
   }
 
+  getUtxosByUnit(unit: string): Promise<UTxO[]> {
+    const utxos: UTxO[] = Object.values(this.ledger).flatMap(({utxo}) =>
+      utxo.assets[unit] > 0n ? utxo : []
+    );
+
+    if (utxos.length > 1) {
+      throw new Error("Unit needs to be an NFT or only held by one address.");
+    }
+
+    return Promise.resolve(utxos);
+  }
+
   getUtxoByUnit(unit: string): Promise<UTxO> {
     const utxos: UTxO[] = Object.values(this.ledger).flatMap(({utxo}) =>
       utxo.assets[unit] > 0n ? utxo : []
@@ -184,6 +196,10 @@ export class Emulator implements Provider {
     }
 
     return Promise.resolve(utxos[0]);
+  }
+
+  getUtxosMintByUnit(unit: Unit): Promise<UTxO[]> {
+    return this.getUtxosByUnit(unit);
   }
 
   getDelegation(rewardAddress: RewardAddress): Promise<Delegation> {

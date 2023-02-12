@@ -8,9 +8,9 @@ import {
   TSchema,
   Type,
 } from "https://deno.land/x/typebox@0.25.13/src/typebox.ts";
-import { C, Core } from "../core/mod.ts";
-import { Datum, Json, Redeemer } from "../types/mod.ts";
-import { fromHex, toHex } from "../utils/utils.ts";
+import {C, Core} from "../core/mod.ts";
+import {Datum, Json, Redeemer} from "../types/mod.ts";
+import {fromHex, toHex} from "../utils/utils.ts";
 
 export class Constr<T> {
   index: number;
@@ -39,7 +39,7 @@ export type Data =
 export const Data = {
   // Types
   // Note: Recursive types are not supported (yet)
-  BigInt: Type.Unsafe<bigint>({ type: "bigint" }),
+  BigInt: Type.Unsafe<bigint>({type: "bigint"}),
   String: Type.String(), // Bytes in hex
   Boolean: Type.Boolean(),
   Any: Type.Unsafe<Data>(),
@@ -64,7 +64,7 @@ export const Data = {
     properties: T,
     hasConstr = true,
   ) {
-    return Type.Object(properties, { hasConstr });
+    return Type.Object(properties, {hasConstr});
   },
   Enum: function <T extends TSchema>(items: T[]) {
     return Type.Union(items);
@@ -74,13 +74,13 @@ export const Data = {
    * Set 'hasConstr' to true to apply a PlutusData Constr with index 0.
    */
   Tuple: function <T extends TSchema[]>(items: [...T], hasConstr = false) {
-    return Type.Tuple(items, { hasConstr });
+    return Type.Tuple(items, {hasConstr});
   },
   Literal: function <T extends TLiteralValue>(literal: T): TLiteral<T> {
     return Type.Literal(literal);
   },
   Nullable: function <T extends TSchema>(schema: T) {
-    return Type.Unsafe<Data.Static<T> | null>({ ...schema, nullable: true });
+    return Type.Unsafe<Data.Static<T> | null>({...schema, nullable: true});
   },
 
   /**
@@ -90,6 +90,7 @@ export const Data = {
   to,
   /** Convert Cbor encoded data to PlutusData */
   from,
+  deserialize,
   /**
    *  Convert Cbor encoded data to Data.\
    *  Or apply a shape and cast the cbor encoded data to a certain type.
@@ -121,7 +122,7 @@ function to<T = Data>(data: T, shape?: TSchema): Datum | Redeemer {
       } else if (typeof data === "string") {
         return C.PlutusData.new_bytes(fromHex(data));
       } else if (data instanceof Constr) {
-        const { index, fields } = data;
+        const {index, fields} = data;
         const plutusList = C.PlutusList.new();
 
         fields.forEach((field) => plutusList.add(serialize(field)));
@@ -152,6 +153,7 @@ function to<T = Data>(data: T, shape?: TSchema): Datum | Redeemer {
       throw new Error("Could not serialize the data: " + error);
     }
   }
+
   const d = shape ? castTo<T>(data, shape) : data as Data;
   return toHex(serialize(d).to_bytes()) as Datum | Redeemer;
 }
@@ -161,40 +163,41 @@ function to<T = Data>(data: T, shape?: TSchema): Datum | Redeemer {
  *  Or apply a shape and cast the cbor encoded data to a certain type.
  */
 function from<T = Data>(raw: Datum | Redeemer, shape?: TSchema): T {
-  function deserialize(data: Core.PlutusData): Data {
-    if (data.kind() === 0) {
-      const constr = data.as_constr_plutus_data()!;
-      const l = constr.data();
-      const desL = [];
-      for (let i = 0; i < l.len(); i++) {
-        desL.push(deserialize(l.get(i)));
-      }
-      return new Constr(parseInt(constr.alternative().to_str()), desL);
-    } else if (data.kind() === 1) {
-      const m = data.as_map()!;
-      const desM: Map<Data, Data> = new Map();
-      const keys = m.keys();
-      for (let i = 0; i < keys.len(); i++) {
-        desM.set(deserialize(keys.get(i)), deserialize(m.get(keys.get(i))!));
-      }
-      return desM;
-    } else if (data.kind() === 2) {
-      const l = data.as_list()!;
-      const desL = [];
-      for (let i = 0; i < l.len(); i++) {
-        desL.push(deserialize(l.get(i)));
-      }
-      return desL;
-    } else if (data.kind() === 3) {
-      return BigInt(data.as_integer()!.to_str());
-    } else if (data.kind() === 4) {
-      return toHex(data.as_bytes()!);
-    }
-    throw new Error("Unsupported type");
-  }
   const data = deserialize(C.PlutusData.from_bytes(fromHex(raw)));
 
   return shape ? castFrom<T>(data, shape) : data as T;
+}
+
+function deserialize(data: Core.PlutusData): Data {
+  if (data.kind() === 0) {
+    const constr = data.as_constr_plutus_data()!;
+    const l = constr.data();
+    const desL = [];
+    for (let i = 0; i < l.len(); i++) {
+      desL.push(deserialize(l.get(i)));
+    }
+    return new Constr(parseInt(constr.alternative().to_str()), desL);
+  } else if (data.kind() === 1) {
+    const m = data.as_map()!;
+    const desM: Map<Data, Data> = new Map();
+    const keys = m.keys();
+    for (let i = 0; i < keys.len(); i++) {
+      desM.set(deserialize(keys.get(i)), deserialize(m.get(keys.get(i))!));
+    }
+    return desM;
+  } else if (data.kind() === 2) {
+    const l = data.as_list()!;
+    const desL = [];
+    for (let i = 0; i < l.len(); i++) {
+      desL.push(deserialize(l.get(i)));
+    }
+    return desL;
+  } else if (data.kind() === 3) {
+    return BigInt(data.as_integer()!.to_str());
+  } else if (data.kind() === 4) {
+    return toHex(data.as_bytes()!);
+  }
+  throw new Error("Unsupported type");
 }
 
 /**
@@ -220,6 +223,7 @@ function fromJson(json: Json): Data {
     }
     throw new Error("Unsupported type");
   }
+
   return toData(json);
 }
 
@@ -265,6 +269,7 @@ function toJson(plutusData: Data): Json {
       "Unsupported type (Note: Constructor cannot be converted to JSON)",
     );
   }
+
   return fromData(plutusData);
 }
 
@@ -273,11 +278,12 @@ function castFrom<T>(data: Data, shape: TSchema): T {
   const shapeType = (shape.anyOf ? "enum" : "") || shape.type;
 
   if (shape.nullable) {
+    if (data == undefined) return null as T;
     if (!(data instanceof Constr)) {
       throw new Error("Could not type cast to nullable.");
     }
     if (data.index === 0) {
-      const noNullableShape = { ...shape };
+      const noNullableShape = {...shape};
       noNullableShape.nullable = false;
       return castFrom<T>(data.fields[0], noNullableShape);
     } else if (data.index === 1 && data.fields.length === 0) return null as T;
@@ -406,8 +412,8 @@ function castFrom<T>(data: Data, shape: TSchema): T {
       const map = new Map();
       for (
         const [key, value] of (data)
-          .entries()
-      ) {
+        .entries()
+        ) {
         map.set(castFrom<T>(key, shape.key), castFrom<T>(value, shape.value));
       }
       return map as T;
@@ -423,8 +429,8 @@ function castTo<T>(struct: T, shape: TSchema): Data {
   const shapeType = (shape.anyOf ? "enum" : "") || shape.type;
 
   if (shape.nullable) {
-    if (struct !== null) {
-      const noNullableShape = { ...shape };
+    if (struct !== null && struct != undefined) {
+      const noNullableShape = {...shape};
       noNullableShape.nullable = false;
       return new Constr(0, [castTo<T>(struct, noNullableShape)]);
     }
@@ -433,6 +439,11 @@ function castTo<T>(struct: T, shape: TSchema): Data {
 
   switch (shapeType) {
     case "bigint": {
+      // if (typeof struct !== "bigint" && typeof struct !== "string") {
+      //   throw new Error("Could not type cast to bigint.");
+      // }
+      //
+      // return (typeof struct === "string" ? BigInt(struct.slice(0, -1)) : struct) as bigint;
       if (typeof struct !== "bigint") {
         throw new Error("Could not type cast to bigint.");
       }
@@ -476,10 +487,10 @@ function castTo<T>(struct: T, shape: TSchema): Data {
             );
           }
           const enumIndex = (shape as TEnum).anyOf.findIndex((
-            schema: TSchema,
-          ) =>
-            schema.type === "object" &&
-            Object.keys(schema.properties)[0] === enumKey
+              schema: TSchema,
+            ) =>
+              schema.type === "object" &&
+              Object.keys(schema.properties)[0] === enumKey
           );
           const enumSchema = shape.anyOf[enumIndex].properties[enumKey];
 
@@ -522,8 +533,8 @@ function castTo<T>(struct: T, shape: TSchema): Data {
       const map = new Map<Data, Data>();
       for (
         const [key, value] of (struct)
-          .entries()
-      ) {
+        .entries()
+        ) {
         map.set(castTo<T>(key, shape.key), castTo<T>(value, shape.value));
       }
       return map;

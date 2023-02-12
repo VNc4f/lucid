@@ -38,6 +38,10 @@ export interface Provider {
   /** Query a UTxO by a unit. It needs to be an NFT (or optionally the entire supply in one UTxO). */
   getUtxoByUnit(unit: Unit): Promise<UTxO>;
 
+  getUtxosByUnit(unit: Unit): Promise<UTxO[]>;
+
+  getUtxosMintByUnit(unit: Unit): Promise<UTxO[]>;
+
   /** Query UTxOs by the output reference (tx hash and index). */
   getUtxosByOutRef(outRefs: Array<OutRef>): Promise<UTxO[]>;
 

@@ -173,6 +173,14 @@ export class Lucid {
     return this.provider.getUtxosWithUnit(addressOrCredential, unit);
   }
 
+  utxosByUnit(unit: Unit): Promise<UTxO[]> {
+    return this.provider.getUtxosByUnit(unit);
+  }
+
+  utxosMintByUnit(unit: Unit): Promise<UTxO[]> {
+    return this.provider.getUtxosMintByUnit(unit);
+  }
+
   /** Unit needs to be an NFT (or optionally the entire supply in one UTxO). */
   utxoByUnit(unit: Unit): Promise<UTxO> {
     return this.provider.getUtxoByUnit(unit);
@@ -209,6 +217,10 @@ export class Lucid {
       throw new Error("This func call does not have a datum hash.");
     }
     return await this.provider.getDatumJson(datumHash);
+  }
+
+  plutusDataDecode(raw: string): Data {
+    return Data.deserialize(C.PlutusData.from_bytes(fromHex(raw)));
   }
 
   /**
