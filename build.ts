@@ -1,6 +1,7 @@
 import {build, emptyDir} from "https://deno.land/x/dnt@0.30.0/mod.ts";
 import * as esbuild from "https://deno.land/x/esbuild@v0.14.45/mod.js";
 import {copySync} from "https://deno.land/std@0.177.0/fs/copy.ts";
+import { existsSync } from "https://deno.land/std@0.177.0/fs/mod.ts";
 import packageInfo from "./package.json" assert {type: "json"};
 
 await emptyDir("./dist");
@@ -106,18 +107,18 @@ Deno.copyFileSync(
   "../nebula-deploy/lucid-cardano/mod.js",
 );
 
-Deno.removeSync("../nebula/lucid-cardano/src", {recursive: true});
-copySync("./src", "../nebula/lucid-cardano/src", {overwrite: true})
-Deno.removeSync("../nebula/lucid-cardano/src/examples", {recursive: true});
+Deno.removeSync("../../giangpt/nebula/lucid-cardano", {recursive: true});
+copySync("./src", "../../giangpt/nebula/lucid-cardano", {overwrite: true})
+Deno.removeSync("../../giangpt/nebula/lucid-cardano/examples", {recursive: true});
 
-Deno.removeSync("../nebula/lucid-cardano/mod.ts");
+if (existsSync("../../giangpt/nebula/lucid-cardano/mod.ts")) Deno.removeSync("../../giangpt/nebula/lucid-cardano/mod.ts");
 Deno.copyFileSync(
   "mod.ts",
-  "../nebula/lucid-cardano/mod.ts",
+  "../../giangpt/nebula/lucid-cardano/mod.ts",
 );
 
-Deno.removeSync("../nebula/lucid-cardano/package.json");
+if (existsSync("../../giangpt/nebula/lucid-cardano/package.json")) Deno.removeSync("../../giangpt/nebula/lucid-cardano/package.json");
 Deno.copyFileSync(
   "package.json",
-  "../nebula/lucid-cardano/package.json",
+  "../../giangpt/nebula/lucid-cardano/package.json",
 );
