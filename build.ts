@@ -101,24 +101,24 @@ Deno.copyFileSync(
   "dist/web/wasm_modules/cardano_message_signing_web/cardano_message_signing_bg.wasm",
 );
 
-Deno.removeSync("../nebula-deploy/lucid-cardano/mod.js");
+if (existsSync("../../spacebudz/nebula-deploy/lucid-cardano/mod.js")) Deno.removeSync("../../spacebudz/nebula-deploy/lucid-cardano/mod.js");
 Deno.copyFileSync(
   "dist/web/mod.js",
-  "../nebula-deploy/lucid-cardano/mod.js",
+  "../../spacebudz/nebula-deploy/lucid-cardano/mod.js",
 );
 
-Deno.removeSync("../../giangpt/nebula/lucid-cardano", {recursive: true});
-copySync("./src", "../../giangpt/nebula/lucid-cardano", {overwrite: true})
-Deno.removeSync("../../giangpt/nebula/lucid-cardano/examples", {recursive: true});
+Deno.removeSync("../nebula/lucid-cardano", {recursive: true});
+copySync("./src", "../nebula/lucid-cardano", {overwrite: true})
+Deno.removeSync("../nebula/lucid-cardano/examples", {recursive: true});
 
-if (existsSync("../../giangpt/nebula/lucid-cardano/mod.ts")) Deno.removeSync("../../giangpt/nebula/lucid-cardano/mod.ts");
-Deno.copyFileSync(
-  "mod.ts",
-  "../../giangpt/nebula/lucid-cardano/mod.ts",
-);
+// if (existsSync("../nebula/lucid-cardano/mod.ts")) Deno.removeSync("../nebula/lucid-cardano/mod.ts");
+// Deno.copyFileSync(
+//   "mod.ts",
+//   "../nebula/lucid-cardano/mod.ts",
+// );
 
-if (existsSync("../../giangpt/nebula/lucid-cardano/package.json")) Deno.removeSync("../../giangpt/nebula/lucid-cardano/package.json");
+if (existsSync("../nebula/lucid-cardano/package.json")) Deno.removeSync("../nebula/lucid-cardano/package.json");
 Deno.copyFileSync(
   "package.json",
-  "../../giangpt/nebula/lucid-cardano/package.json",
+  "../nebula/lucid-cardano/package.json",
 );
