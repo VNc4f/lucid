@@ -162,44 +162,44 @@ export class Lucid {
     return this.utils.unixTimeToSlot(Date.now());
   }
 
-  utxosAt(addressOrCredential: Address | Credential): Promise<UTxO[]> {
-    return this.provider.getUtxos(addressOrCredential);
+  async utxosAt(addressOrCredential: Address | Credential): Promise<UTxO[]> {
+    return await this.provider.getUtxos(addressOrCredential);
   }
 
-  utxosAtWithUnit(
+  async utxosAtWithUnit(
     addressOrCredential: Address | Credential,
     unit: Unit,
   ): Promise<UTxO[]> {
-    return this.provider.getUtxosWithUnit(addressOrCredential, unit);
+    return await this.provider.getUtxosWithUnit(addressOrCredential, unit);
   }
 
-  utxosByUnit(unit: Unit): Promise<UTxO[]> {
-    return this.provider.getUtxosByUnit(unit);
+  async utxosByUnit(unit: Unit): Promise<UTxO[]> {
+    return await this.provider.getUtxosByUnit(unit);
   }
 
-  utxosMintByUnit(unit: Unit): Promise<UTxO[]> {
-    return this.provider.getUtxosMintByUnit(unit);
+  async utxosMintByUnit(unit: Unit): Promise<UTxO[]> {
+    return await this.provider.getUtxosMintByUnit(unit);
   }
 
   /** Unit needs to be an NFT (or optionally the entire supply in one UTxO). */
-  utxoByUnit(unit: Unit): Promise<UTxO> {
-    return this.provider.getUtxoByUnit(unit);
+  async utxoByUnit(unit: Unit): Promise<UTxO> {
+    return await this.provider.getUtxoByUnit(unit);
   }
 
-  utxosByOutRef(outRefs: Array<OutRef>): Promise<UTxO[]> {
-    return this.provider.getUtxosByOutRef(outRefs);
+  async utxosByOutRef(outRefs: Array<OutRef>): Promise<UTxO[]> {
+    return await this.provider.getUtxosByOutRef(outRefs);
   }
 
-  utxosByHash(txHash: TxHash): Promise<UTxO[]> {
-    return this.provider.getUtxosByHash(txHash);
+  async utxosByHash(txHash: TxHash): Promise<UTxO[]> {
+    return await this.provider.getUtxosByHash(txHash);
   }
 
-  delegationAt(rewardAddress: RewardAddress): Promise<Delegation> {
-    return this.provider.getDelegation(rewardAddress);
+  async delegationAt(rewardAddress: RewardAddress): Promise<Delegation> {
+    return await this.provider.getDelegation(rewardAddress);
   }
 
-  awaitTx(txHash: TxHash, checkInterval = 3000): Promise<boolean> {
-    return this.provider.awaitTx(txHash, checkInterval);
+  async awaitTx(txHash: TxHash, checkInterval = 3000): Promise<boolean> {
+    return await this.provider.awaitTx(txHash, checkInterval);
   }
 
   async datumOf<T = Datum>(utxo: UTxO, shape?: TSchema): Promise<T> {

@@ -175,11 +175,13 @@ export class Blockfrost implements Provider {
 
   async getUtxosByOutRef(outRefs: OutRef[]): Promise<UTxO[]> {
     const queryHashes = [...new Set(outRefs.map((outRef) => outRef.txHash))];
-    const utxos = await Promise.all(queryHashes.map(this.getUtxosByHash));
+    const utxos = await Promise.all(queryHashes.map((txHash: TxHash) => {
+      return this.getUtxosByHash(txHash)
+    }));
 
     return utxos.reduce((acc, utxos) => acc.concat(utxos), []).filter((utxo) =>
       outRefs.some((outRef) =>
-        utxo.txHash === outRef.txHash && utxo.outputIndex === outRef.outputIndex
+        utxo.txHash == outRef.txHash && utxo.outputIndex == outRef.outputIndex
       )
     );
   }
