@@ -35,7 +35,7 @@ import { TxComplete } from "./tx_complete.ts";
 export class Tx {
   txBuilder: Core.TransactionBuilder;
   /** Stores the tx instructions, which get executed after calling .complete() */
-  private tasks: ((that: Tx) => unknown)[];
+  tasks: ((that: Tx) => unknown)[];
   private lucid: Lucid;
 
   constructor(lucid: Lucid) {
@@ -509,6 +509,78 @@ export class Tx {
   compose(tx: Tx | null): Tx {
     if (tx) this.tasks = this.tasks.concat(tx.tasks);
     return this;
+  }
+
+  async txBuilderBalance(options?: {
+    change?: { address?: Address; outputData?: OutputData };
+    coinSelection?: boolean;
+    nativeUplc?: boolean;
+  }): Promise<Core.TransactionBuilder> {
+    if (
+      [
+        options?.change?.outputData?.hash,
+        options?.change?.outputData?.asHash,
+        options?.change?.outputData?.inline,
+      ].filter((b) => b)
+        .length > 1
+    ) {
+      throw new Error(
+        "Not allowed to set hash, asHash and inline at the same time.",
+      );
+    }
+
+    let task = this.tasks.shift();
+    while (task) {
+      await task(this);
+      task = this.tasks.shift();
+    }
+
+    const utxos = await this.lucid.wallet.getUtxosCore();
+
+    const changeAddress: Core.Address = addressFromWithNetworkCheck(
+      options?.change?.address || (await this.lucid.wallet.address()),
+      this.lucid,
+    );
+
+    if (options?.coinSelection || options?.coinSelection === undefined) {
+      this.txBuilder.add_inputs_from(utxos, changeAddress);
+    }
+
+    this.txBuilder.balance(
+      changeAddress,
+      (() => {
+        if (options?.change?.outputData?.hash) {
+          return C.Datum.new_data_hash(
+            C.DataHash.from_hex(
+              options.change.outputData.hash,
+            ),
+          );
+        } else if (options?.change?.outputData?.asHash) {
+          this.txBuilder.add_plutus_data(
+            C.PlutusData.from_bytes(fromHex(options.change.outputData.asHash)),
+          );
+          return C.Datum.new_data_hash(
+            C.hash_plutus_data(
+              C.PlutusData.from_bytes(
+                fromHex(options.change.outputData.asHash),
+              ),
+            ),
+          );
+        } else if (options?.change?.outputData?.inline) {
+          return C.Datum.new_data(
+            C.Data.new(
+              C.PlutusData.from_bytes(
+                fromHex(options.change.outputData.inline),
+              ),
+            ),
+          );
+        } else {
+          return undefined;
+        }
+      })(),
+    );
+
+    return this.txBuilder;
   }
 
   async complete(options?: {
