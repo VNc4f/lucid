@@ -107,7 +107,7 @@ Deno.copyFileSync(
   "../dapp/lucid-cardano/mod.js",
 );
 
-Deno.removeSync("../nebula/lucid-cardano", {recursive: true});
+if (existsSync("../nebula/lucid-cardano")) Deno.removeSync("../nebula/lucid-cardano", {recursive: true});
 copySync("./src", "../nebula/lucid-cardano", {overwrite: true})
 Deno.removeSync("../nebula/lucid-cardano/examples", {recursive: true});
 
@@ -122,3 +122,19 @@ Deno.copyFileSync(
   "package.json",
   "../nebula/lucid-cardano/package.json",
 );
+
+// if (existsSync("../cardano-smart-contract/src/lucid-cardano")) Deno.removeSync("../cardano-smart-contract/src/lucid-cardano", {recursive: true});
+// copySync("./src", "../cardano-smart-contract/src/lucid-cardano", {overwrite: true})
+// Deno.removeSync("../cardano-smart-contract/src/lucid-cardano/examples", {recursive: true});
+
+// // if (existsSync("../cardano-smart-contract/src/lucid-cardano/mod.ts")) Deno.removeSync("../cardano-smart-contract/src/lucid-cardano/mod.ts");
+// // Deno.copyFileSync(
+// //   "mod.ts",
+// //   "../cardano-smart-contract/src/lucid-cardano/mod.ts",
+// // );
+
+// if (existsSync("../cardano-smart-contract/src/lucid-cardano/package.json")) Deno.removeSync("../cardano-smart-contract/src/lucid-cardano/package.json");
+// Deno.copyFileSync(
+//   "package.json",
+//   "../cardano-smart-contract/src/lucid-cardano/package.json",
+// );
