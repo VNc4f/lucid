@@ -101,10 +101,10 @@ Deno.copyFileSync(
   "dist/web/wasm_modules/cardano_message_signing_web/cardano_message_signing_bg.wasm",
 );
 
-if (existsSync("../dapp/lucid-cardano/mod.js")) Deno.removeSync("../dapp/lucid-cardano/mod.js");
+if (existsSync("../dapp/src/lucid-cardano/mod.js")) Deno.removeSync("../dapp/src/lucid-cardano/mod.js");
 Deno.copyFileSync(
   "dist/web/mod.js",
-  "../dapp/lucid-cardano/mod.js",
+  "../dapp/src/lucid-cardano/mod.js",
 );
 
 if (existsSync("../nebula/lucid-cardano")) Deno.removeSync("../nebula/lucid-cardano", {recursive: true});
